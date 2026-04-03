@@ -1,13 +1,105 @@
 const params = new URLSearchParams(window.location.search);
-const name = params.get("name") || "Friend";
-let candleCount = parseInt(params.get("candles")) || 4;
-candleCount = Math.min(Math.max(candleCount, 1), 10);
+const nameFromUrl = params.get("name");
+const name = nameFromUrl || "Friend";
 
-const birthdayMessage = document.getElementById("birthdayText");
-birthdayMessage.innerHTML =
-    `<div id="mainTitle">Happy Birthday, ${name}!</div>
-    <div id="subTitle">Blow out your candles and make a wish!</div>`;
 const cake = document.getElementById("cake");
+const btn = document.getElementById("micBtn");
+const dialog = document.getElementById("userName");
+const nameForm = document.getElementById("nameForm");
+const nameInput = document.getElementById("name");
+const selectedCake = document.getElementById("selectedCake");
+const candlesSelect = document.getElementById("candles");
+const birthdayMessage = document.getElementById("birthdayText");
+const cakeChoiceButtons = document.querySelectorAll(".cakeChoice");
+let candleCount = parseInt(document.getElementById("candles")?.value, 10) || 4;
+candleCount = Math.min(Math.max(candleCount, 1), 30);
+
+window.addEventListener('load', () => {
+    const bgm = document.getElementById('bgm');
+
+    if (bgm.paused) {
+        const play = document.getElementById('play');
+
+        play.onclick = () => {
+            if (play.dataset.transitioning === "true") {
+                return;
+            }
+
+            play.dataset.transitioning = "true";
+            bgm.play();
+            play.classList.add("fade-out");
+
+            const onFadeOutEnd = (event) => {
+                if (event.propertyName !== "opacity") {
+                    return;
+                }
+
+                play.removeEventListener("transitionend", onFadeOutEnd);
+                play.innerHTML = `&#127874;Now Playing: K.K. Birthday`;
+                play.classList.remove("fade-out");
+                play.onclick = null;
+                play.dataset.transitioning = "false";
+            };
+
+            play.addEventListener("transitionend", onFadeOutEnd);
+        };
+
+        play.classList.add("show");
+    }
+});
+
+function renderGreeting(displayName) {
+    birthdayMessage.innerHTML =
+        `<div id="mainTitle">Happy Birthday, ${displayName}!</div>
+        <div id="subTitle">Blow out your candles and make a wish!</div>`;
+}
+
+renderGreeting(name);
+
+if (dialog) {
+    dialog.showModal();
+}
+
+if (nameForm) {
+    nameForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const enteredName = nameInput.value.trim() || "Friend";
+        renderGreeting(enteredName);
+
+        candleCount = parseInt(candlesSelect?.value, 10) || 4;
+        candleCount = Math.min(Math.max(candleCount, 1), 30);
+        createCandles(candleCount);
+        applyCake();
+
+        if (dialog) {
+            dialog.close();
+        }
+    });
+}
+
+function getSelectedCake(){
+    return selectedCake ? selectedCake.value : "vanilla";
+}
+
+function applyCake() {
+    const style = getSelectedCake();
+    cake.className = `cake ${style}`;
+}
+
+if (selectedCake) {
+    selectedCake.addEventListener("change", applyCake);
+}
+
+cakeChoiceButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+        const cakeType = button.dataset.cake || "vanilla";
+        if (selectedCake) {
+            selectedCake.value = cakeType;
+        }
+        applyCake();
+    });
+});
 
 const candleColors = [
     "pink-candle-idle",
@@ -24,7 +116,10 @@ const candlesPerRow = 10;
 const shiftAmount = 10;
 const pixelUnit = 5;
 const candleScale = 0.55;
-const candleXOffset = 32;
+const candleXOffset = 40;
+
+applyCake();
+createCandles(candleCount);
 
 function createCandles(count) {
     cake.innerHTML = "";
@@ -54,8 +149,6 @@ function createCandles(count) {
     }
 }
 
-createCandles(candleCount);
-
 let micFallbackEnabled = false;
 
 function enableManualFallback(message) {
@@ -84,7 +177,7 @@ async function startMicDetection(){
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         await audioContext.resume();
 
-        const source = audioContext.createMediaStream(stream);
+        const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
 
         analyser.fftSize = 1024; // more bins gives smoother detection
@@ -97,6 +190,12 @@ async function startMicDetection(){
         let blown = false;
         let blowFrames = 0;
         let cooldownFrames = 0;
+        let previousRms = 0;
+        const detectionStartTime = performance.now();
+        const gracePeriodMs = 650;
+        const listeningWindowMs = 10000;
+        const requiredBlowFrames = 6;  // Requires more sustained detection
+        const subTitle = document.getElementById("subTitle");
 
         function detectBlow(){
             analyser.getByteFrequencyData(dataArray);
@@ -128,26 +227,59 @@ async function startMicDetection(){
             }
             const rms = Math.sqrt(squareSum / timeArray.length);
 
-            // Use both spectral shape and overall intensity so blowing works more consistently.
-            const blowRatioThreshold = 0.34;
-            const blowVolumeThreshold = 12;
-            const blowRmsThreshold = 0.03;
-            const looksLikeBlow =
-                (ratio > blowRatioThreshold && highAvg > 4) ||
-                volume > blowVolumeThreshold ||
-                rms > blowRmsThreshold;
+            // Detect sudden increase in energy (attack/onset) - filters out steady background noise
+            const rmsIncrease = rms - previousRms;
+            const hasOnset = rmsIncrease > 0.015;  // Sudden spike in energy
+            previousRms = rms * 0.7 + previousRms * 0.3;  // Smooth previous for stable comparison
+
+            // Stricter thresholds to filter background noise and chatter
+            const blowRatioThreshold = 0.55;     // More strict ratio
+            const blowVolumeThreshold = 8.0;     // Higher volume threshold
+            const blowRmsThreshold = 0.065;      // Higher RMS threshold
+            const ratioTriggered = ratio > blowRatioThreshold && highAvg > 8;
+            const volumeTriggered = volume > blowVolumeThreshold;
+            const rmsTriggered = rms > blowRmsThreshold;
+            
+            // Require onset + at least 2 other signals = real blow pattern
+            const triggeredSignals =
+                Number(ratioTriggered) + Number(volumeTriggered) + Number(rmsTriggered);
+            const looksLikeBlow = hasOnset && triggeredSignals >= 2;
+
+            const elapsedMs = performance.now() - detectionStartTime;
+
+            // Ignore very early room noise right after mic starts.
+            if (elapsedMs < gracePeriodMs) {
+                if (subTitle) {
+                    subTitle.textContent = "Listening... get ready to blow";
+                }
+                requestAnimationFrame(detectBlow);
+                return;
+            }
+
+            // Keep listening for longer, but do not delay detection during this window.
+            if (elapsedMs > gracePeriodMs + listeningWindowMs) {
+                stream.getTracks().forEach((track) => track.stop());
+                enableManualFallback("Didn't catch a blow in time. Tap to blow manually.");
+                return;
+            }
 
             if (looksLikeBlow) {
                 blowFrames += 1;
                 cooldownFrames = 0;
+                if (subTitle) {
+                    subTitle.textContent = `Blow detected!`;
+                }
             } else {
                 cooldownFrames += 1;
-                if (cooldownFrames > 2) {
+                if (cooldownFrames > 2) {  // Faster reset - if signal drops for 2 frames, reset
                     blowFrames = 0;
+                }
+                if (subTitle) {
+                    subTitle.textContent = "Listening... blow now!";
                 }
             }
 
-            if(blowFrames >= 2 && !blown){
+            if(blowFrames >= requiredBlowFrames && !blown){
                 blown = true;
                 blowOutCandles();
 
@@ -202,12 +334,24 @@ function blowOutCandles(){
     });
 
     setTimeout(() => {
+        candles.forEach((candle) => {
+            candle.classList.remove("blown");
+            candle.classList.add("extinguished");
+        });
+    }, 1000);
+
+    setTimeout(() => {
+        confetti({
+            particleCount:300,
+            spread: 100,
+            startVelocity: 55, 
+            scalar: 0.9
+        });
         const subTitle = document.getElementById("subTitle");
-        subTitle.textContent = `Yippee!! Hope you have the happiest birthday! <3`
+        subTitle.textContent = 'Yay! Hope u have the best birthday!♡‧₊˚';
     }, 1200);
 };
 
-const btn = document.getElementById('micBtn');
 if (btn) {
    btn.addEventListener('click', () => {
         if (micFallbackEnabled) {

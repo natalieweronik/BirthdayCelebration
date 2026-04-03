@@ -4,6 +4,8 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Birthday Celebration</title>
+        <link rel="icon" type="image/x-icon" href="images/favicon_io/favicon.ico">
+        <link rel="apple-touch-icon" href="images/favicon_io/apple-touch-icon.png">
         <link rel="stylesheet" href="styles.css">
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,6 +13,74 @@
         <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
     </head>
     <body>
+        <audio id="bgm" src="music/K.K.Bday.mp3" loop autoplay></audio>
+        <div id = "play">&#127925;Click to play music!</div>
+        <dialog id="userName">
+            <h3>What's your name?</h3>
+            <form id="nameForm">
+                <input id="name" autocomplete="given-name">
+                <div id="cakeSelector">
+                    <label>
+                        <h3>Pick your Cake!</h3>
+                            <div class="cakeChoices">
+                                <button type="button" class="cakeChoice" data-cake="vanilla" aria-label="Choose vanilla cake">
+                                    <img src="images/vanillaSlice.png" alt="Vanilla cake">
+                                </button>
+                                <button type="button" class="cakeChoice" data-cake="chocolate" aria-label="Choose chocolate cake">
+                                    <img src="images/chocolateSlice.png" alt="Chocolate cake">
+                                </button>
+                                <button type="button" class="cakeChoice" data-cake="strawberry" aria-label="Choose strawberry cake">
+                                    <img src="images/strawberrySlice.png" alt="Strawberry cake">
+                                </button>
+                            </div>
+                            <select id="selectedCake" hidden>
+                                <option value="vanilla">Vanilla</option>
+                                <option value="chocolate">Chocolate</option>
+                                <option value="strawberry">Strawberry</option>
+                            </select>
+                    </label>
+                    <div id="candlePicker">
+                        <label>
+                            <h3>How many candles do you want?</h3>
+                            <select className = 'candleNum' id="candles">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                                <option value="13">13</option>
+                                <option value="14">14</option>
+                                <option value="15">15</option>
+                                <option value="16">16</option>
+                                <option value="17">17</option>
+                                <option value="18">18</option>
+                                <option value="19">19</option>
+                                <option value="20">20</option>
+                                <option value="21">21</option>
+                                <option value="22">22</option>
+                                <option value="23">23</option>
+                                <option value="24">24</option>
+                                <option value="25">25</option>
+                                <option value="26">26</option>
+                                <option value="27">27</option>
+                                <option value="28">28</option>
+                                <option value="29">29</option>
+                                <option value="30">30</option>
+                            </select>
+                        </label>
+                    </div>
+                    <button id="submitBtn" type="submit">Next</button>
+                </div>
+            </form>
+        </dialog>
+        
         <div class = "container">
             <div id="birthdayText"></div>
             <div class="cakeContainer">
@@ -18,11 +88,12 @@
             </div>
         </div>
 
-        <div class="startbtn">
+        <div class="startBtn">
             <button id="micBtn"> Start &amp; Blow!</button>
         </div>
 
         <script src = "script.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
         
     </body>
     
