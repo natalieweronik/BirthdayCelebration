@@ -8,6 +8,7 @@ This birthday celebration webpage is a great and interactive way to celebrate on
 * Blow out candles using your device's built-in microphone
 * Animated candles extinguishing when you blow them out
 \
+\
 *🎈Getting Started*
 * Step 1: Clone The Repository
 git clone https://github.com/natalieweronik/BirthdayCelebration
