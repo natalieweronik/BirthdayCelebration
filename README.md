@@ -10,23 +10,14 @@ This birthday celebration webpage is a great and interactive way to celebrate on
 \
 *🎈Getting Started*
 * Step 1: Clone The Repository
-\
-git clone [Link Text](https://github.com/natalieweronik/BirthdayCelebration)
-\
+git clone https://github.com/natalieweronik/BirthdayCelebration
 * Step 2: Open HTML File
-\
-Click on the HTML file to open in your chosen browser\
-\
+Click on the HTML file to open in your chosen browser
 * Step 3: Customize Your Experience
-\
 Enter your name, select your cake color and number of candles, and click "Click to play music"
-\
 * Step 4: Allow Microphone Access
-\
 After clicking the "Start & Blow" button, your browser will ask you for access to your microphone
-\
 * Step 5: Blow into Your Microphone
-\
 Blow into your microphone and watch the candles extinguish!
 \
 \
